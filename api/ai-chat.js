@@ -5,27 +5,34 @@ const { OpenAI } = require('openai');
 let ldClient;
 let aiClient;
 
-async function initializeServices() {
+function initializeServices() {
   if (!ldClient) {
     const LAUNCHDARKLY_SDK_KEY = process.env.LAUNCHDARKLY_SDK_KEY;
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-
-    if (!LAUNCHDARKLY_SDK_KEY) {
-      throw new Error('LAUNCHDARKLY_SDK_KEY environment variable is required');
-    }
 
     if (!OPENAI_API_KEY) {
       throw new Error('OPENAI_API_KEY environment variable is required');
     }
 
-    // Initialize LaunchDarkly
-    ldClient = init(LAUNCHDARKLY_SDK_KEY);
-    await ldClient.waitForInitialization();
+    if (!LAUNCHDARKLY_SDK_KEY) {
+      console.warn('LAUNCHDARKLY_SDK_KEY not found, using defaults');
+      return { ldClient: null, aiClient: null };
+    }
+
+    // Initialize LaunchDarkly with timeout
+    ldClient = init(LAUNCHDARKLY_SDK_KEY, {
+      timeout: 5,
+      offline: false
+    });
 
     // Initialize AI client
-    aiClient = initAi(ldClient);
-
-    console.log('✅ Services initialized successfully');
+    try {
+      aiClient = initAi(ldClient);
+      console.log('✅ Services initialized successfully');
+    } catch (error) {
+      console.warn('AI client initialization failed:', error.message);
+      aiClient = null;
+    }
   }
 
   return { ldClient, aiClient };
@@ -47,7 +54,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    await initializeServices();
+    const { ldClient: client, aiClient: ai } = initializeServices();
 
     const { message, userContext } = req.body;
 
@@ -76,10 +83,8 @@ module.exports = async (req, res) => {
 
     console.log('🎯 AI Chat request for context:', context);
 
-    // Get AI Config from LaunchDarkly
-    const aiConfigKey = 'chatbot-config';
-    const aiConfig = await aiClient.config(aiConfigKey, context, {
-      // Default configuration if AI Config not found
+    // Get AI Config from LaunchDarkly (if available)
+    let aiConfig = {
       model: {
         name: 'gpt-3.5-turbo',
         parameters: {
@@ -95,7 +100,16 @@ module.exports = async (req, res) => {
                    Keep responses helpful, concise, and focused on developer productivity.`
         }
       ]
-    });
+    };
+
+    if (ai) {
+      try {
+        const aiConfigKey = 'chatbot-config';
+        aiConfig = await ai.config(aiConfigKey, context, aiConfig);
+      } catch (error) {
+        console.warn('Failed to get AI config from LaunchDarkly, using defaults:', error.message);
+      }
+    }
 
     console.log('🤖 Using AI Config:', {
       model: aiConfig.model?.name,
@@ -131,14 +145,18 @@ module.exports = async (req, res) => {
     const responseTime = Date.now() - requestStart;
     const response = completion.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
 
-    // Track metrics back to LaunchDarkly
-    if (aiClient.trackMetrics) {
-      await aiClient.trackMetrics(aiConfigKey, context, {
-        'response_time_ms': responseTime,
-        'tokens_used': completion.usage?.total_tokens || 0,
-        'model_used': aiConfig.model?.name || 'gpt-3.5-turbo',
-        'success': true
-      });
+    // Track metrics back to LaunchDarkly (if available)
+    if (ai && ai.trackMetrics) {
+      try {
+        await ai.trackMetrics('chatbot-config', context, {
+          'response_time_ms': responseTime,
+          'tokens_used': completion.usage?.total_tokens || 0,
+          'model_used': aiConfig.model?.name || 'gpt-3.5-turbo',
+          'success': true
+        });
+      } catch (error) {
+        console.warn('Failed to track metrics to LaunchDarkly:', error.message);
+      }
     }
 
     console.log('✅ AI response generated:', {
