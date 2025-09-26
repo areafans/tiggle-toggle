@@ -269,3 +269,4 @@ This demo was created to showcase LaunchDarkly's capabilities in a realistic app
 ---
 
 *Built with ❤️ to demonstrate the power of LaunchDarkly feature flags*
+# Environment variables configured for Vercel deployment
