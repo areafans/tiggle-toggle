@@ -1,6 +1,6 @@
-const { init } = require('@launchdarkly/node-server-sdk');
-const { initAi } = require('@launchdarkly/server-sdk-ai');
-const { OpenAI } = require('openai');
+import { init } from '@launchdarkly/node-server-sdk';
+import { initAi } from '@launchdarkly/server-sdk-ai';
+import OpenAI from 'openai';
 
 let ldClient;
 let aiClient;
@@ -31,29 +31,15 @@ async function initializeServices() {
   return { ldClient, aiClient };
 }
 
-module.exports = async (req, res) => {
-  // Enable CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
-
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
-  }
-
+export async function POST(request) {
   try {
     await initializeServices();
 
-    const { message, userContext } = req.body;
+    const body = await request.json();
+    const { message, userContext } = body;
 
     if (!message) {
-      return res.status(400).json({ error: 'Message is required' });
+      return Response.json({ error: 'Message is required' }, { status: 400 });
     }
 
     // Create LaunchDarkly context from user info
@@ -148,7 +134,7 @@ module.exports = async (req, res) => {
       model: aiConfig.model?.name
     });
 
-    res.status(200).json({
+    return Response.json({
       response,
       metadata: {
         model: aiConfig.model?.name || 'gpt-3.5-turbo',
@@ -161,9 +147,20 @@ module.exports = async (req, res) => {
   } catch (error) {
     console.error('❌ AI Chat error:', error);
 
-    res.status(500).json({
+    return Response.json({
       error: 'Failed to generate AI response',
       details: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
-    });
+    }, { status: 500 });
   }
+}
+
+export async function OPTIONS(request) {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  });
 }

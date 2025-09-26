@@ -1,4 +1,4 @@
-const { init } = require('@launchdarkly/node-server-sdk');
+import { init } from '@launchdarkly/node-server-sdk';
 
 let ldClient;
 
@@ -16,26 +16,11 @@ async function initializeLaunchDarkly() {
   return ldClient;
 }
 
-module.exports = async (req, res) => {
-  // Enable CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
-
-  if (req.method !== 'GET') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
-  }
-
+export async function GET(request) {
   try {
     const client = await initializeLaunchDarkly();
 
-    res.status(200).json({
+    return Response.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
       services: {
@@ -45,10 +30,21 @@ module.exports = async (req, res) => {
     });
   } catch (error) {
     console.error('Health check error:', error);
-    res.status(500).json({
+    return Response.json({
       status: 'error',
       error: error.message,
       timestamp: new Date().toISOString()
-    });
+    }, { status: 500 });
   }
+}
+
+export async function OPTIONS(request) {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  });
 }
