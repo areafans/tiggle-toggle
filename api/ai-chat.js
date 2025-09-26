@@ -1,6 +1,6 @@
 const { init } = require('@launchdarkly/node-server-sdk');
 const { initAi } = require('@launchdarkly/server-sdk-ai');
-const { OpenAI } = require('openai');
+const OpenAI = require('openai');
 
 let ldClient;
 let aiClient;
