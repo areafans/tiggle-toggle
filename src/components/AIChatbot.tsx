@@ -5,7 +5,6 @@ import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  MessageCircle,
   Send,
   Bot,
   User,

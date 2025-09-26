@@ -48,6 +48,7 @@ export const LaunchDarklyProvider: React.FC<LaunchDarklyProviderProps> = ({ chil
     if (user && ldClient) {
       updateLDUser(user);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, ldClient]);
 
   return (

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { FEATURE_FLAGS, DEFAULT_FLAGS } from '../lib/launchdarkly';
-import { Settings as SettingsIcon, Slack, Bell, User } from 'lucide-react';
+import { Slack, Bell, User } from 'lucide-react';
 
 const Settings: React.FC = () => {
   const flags = useFlags();

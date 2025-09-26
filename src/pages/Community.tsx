@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { Users, MessageSquare, Calendar } from 'lucide-react';
+import { Users, MessageSquare } from 'lucide-react';
 
 const Community: React.FC = () => {
   const teamMembers = [

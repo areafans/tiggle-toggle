@@ -25,7 +25,7 @@ const DemoControlPanel: React.FC = () => {
 
   const { user, switchUser } = useAuth();
   const ldClient = useLDClient();
-  const { setOverride, clearOverride, clearAllOverrides, performanceState, updatePerformanceState, setSimulationMode } = useDemo();
+  const { clearAllOverrides, performanceState, updatePerformanceState, setSimulationMode } = useDemo();
 
   // Initialize experiment tracker when ldClient and user are available
   React.useEffect(() => {
