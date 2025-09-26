@@ -6,54 +6,76 @@ let ldClient;
 let aiClient;
 
 function initializeServices() {
+  console.log('🔧 Initializing services...');
+
   if (!ldClient) {
     const LAUNCHDARKLY_SDK_KEY = process.env.LAUNCHDARKLY_SDK_KEY;
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-    if (!OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY environment variable is required');
-    }
+    console.log('🔑 Environment check:', {
+      hasLdKey: !!LAUNCHDARKLY_SDK_KEY,
+      hasOpenAiKey: !!OPENAI_API_KEY
+    });
 
-    if (!LAUNCHDARKLY_SDK_KEY) {
-      console.warn('LAUNCHDARKLY_SDK_KEY not found, using defaults');
+    if (!OPENAI_API_KEY) {
+      console.warn('⚠️ OPENAI_API_KEY environment variable not found');
       return { ldClient: null, aiClient: null };
     }
 
-    // Initialize LaunchDarkly with timeout
-    ldClient = init(LAUNCHDARKLY_SDK_KEY, {
-      timeout: 5,
-      offline: false
-    });
+    if (!LAUNCHDARKLY_SDK_KEY) {
+      console.warn('⚠️ LAUNCHDARKLY_SDK_KEY not found, using defaults');
+      return { ldClient: null, aiClient: null };
+    }
 
-    // Initialize AI client
     try {
-      aiClient = initAi(ldClient);
-      console.log('✅ Services initialized successfully');
+      // Initialize LaunchDarkly with timeout
+      console.log('🚀 Initializing LaunchDarkly client...');
+      ldClient = init(LAUNCHDARKLY_SDK_KEY, {
+        timeout: 5,
+        offline: false
+      });
+      console.log('✅ LaunchDarkly client created');
+
+      // Initialize AI client
+      try {
+        console.log('🤖 Initializing AI client...');
+        aiClient = initAi(ldClient);
+        console.log('✅ AI client initialized successfully');
+      } catch (error) {
+        console.warn('⚠️ AI client initialization failed:', error.message);
+        aiClient = null;
+      }
     } catch (error) {
-      console.warn('AI client initialization failed:', error.message);
-      aiClient = null;
+      console.error('❌ LaunchDarkly initialization failed:', error.message);
+      return { ldClient: null, aiClient: null };
     }
   }
 
+  console.log('🎯 Services ready:', { hasLdClient: !!ldClient, hasAiClient: !!aiClient });
   return { ldClient, aiClient };
 }
 
 module.exports = async (req, res) => {
+  console.log('🎯 AI Chat request received:', req.method);
+
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
+    console.log('✅ OPTIONS request handled');
     res.status(200).end();
     return;
   }
 
   if (req.method !== 'POST') {
+    console.log('❌ Invalid method:', req.method);
     res.status(405).json({ error: 'Method not allowed' });
     return;
   }
 
   try {
+    console.log('🔧 Starting service initialization...');
     const { ldClient: client, aiClient: ai } = initializeServices();
 
     const { message, userContext } = req.body;
@@ -117,9 +139,17 @@ module.exports = async (req, res) => {
     });
 
     // Initialize OpenAI
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+    console.log('🔧 Initializing OpenAI client...');
+    let openai;
+    try {
+      openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+      });
+      console.log('✅ OpenAI client initialized');
+    } catch (error) {
+      console.error('❌ OpenAI client initialization failed:', error.message);
+      throw error;
+    }
 
     // Prepare messages for OpenAI
     const messages = [
@@ -130,17 +160,30 @@ module.exports = async (req, res) => {
       }
     ];
 
+    console.log('📝 Prepared messages for OpenAI:', {
+      messageCount: messages.length,
+      userMessage: message.substring(0, 50) + '...'
+    });
+
     // Track request start time for metrics
     const requestStart = Date.now();
 
     // Call OpenAI with LaunchDarkly-configured settings
-    const completion = await openai.chat.completions.create({
-      model: aiConfig.model?.name || 'gpt-3.5-turbo',
-      messages: messages,
-      temperature: aiConfig.model?.parameters?.temperature || 0.7,
-      max_tokens: aiConfig.model?.parameters?.max_tokens || 300,
-      stream: false
-    });
+    console.log('🚀 Calling OpenAI API...');
+    let completion;
+    try {
+      completion = await openai.chat.completions.create({
+        model: aiConfig.model?.name || 'gpt-3.5-turbo',
+        messages: messages,
+        temperature: aiConfig.model?.parameters?.temperature || 0.7,
+        max_tokens: aiConfig.model?.parameters?.max_tokens || 300,
+        stream: false
+      });
+      console.log('✅ OpenAI API call successful');
+    } catch (error) {
+      console.error('❌ OpenAI API call failed:', error.message);
+      throw error;
+    }
 
     const responseTime = Date.now() - requestStart;
     const response = completion.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
@@ -176,11 +219,25 @@ module.exports = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ AI Chat error:', error);
+    console.error('❌ AI Chat error occurred:');
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+
+    // More specific error details for debugging
+    const errorDetails = {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      type: error.type,
+      status: error.status
+    };
+
+    console.error('Full error details:', errorDetails);
 
     res.status(500).json({
       error: 'Failed to generate AI response',
-      details: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      details: process.env.NODE_ENV === 'development' ? errorDetails : 'Internal server error'
     });
   }
 }
