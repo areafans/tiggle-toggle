@@ -38,7 +38,9 @@ interface AIServiceResponse {
   };
 }
 
-const AI_SERVICE_URL = 'http://localhost:3001';
+const AI_SERVICE_URL = process.env.NODE_ENV === 'development'
+  ? 'http://localhost:3001'
+  : '';
 
 const AIChatbot: React.FC = () => {
   const { user } = useAuth();
