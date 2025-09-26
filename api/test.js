@@ -1,26 +1,14 @@
-export async function GET(request) {
-  return Response.json({
+module.exports = async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
+  res.status(200).json({
     message: 'API test endpoint working!',
     timestamp: new Date().toISOString(),
-    method: 'GET'
+    method: req.method
   });
-}
-
-export async function POST(request) {
-  return Response.json({
-    message: 'API test endpoint working!',
-    timestamp: new Date().toISOString(),
-    method: 'POST'
-  });
-}
-
-export async function OPTIONS(request) {
-  return new Response(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
-  });
-}
+};

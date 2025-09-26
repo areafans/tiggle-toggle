@@ -1,6 +1,6 @@
-import { init } from '@launchdarkly/node-server-sdk';
-import { initAi } from '@launchdarkly/server-sdk-ai';
-import OpenAI from 'openai';
+const { init } = require('@launchdarkly/node-server-sdk');
+const { initAi } = require('@launchdarkly/server-sdk-ai');
+const { OpenAI } = require('openai');
 
 let ldClient;
 let aiClient;
@@ -31,15 +31,28 @@ async function initializeServices() {
   return { ldClient, aiClient };
 }
 
-export async function POST(request) {
+module.exports = async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
+
   try {
     await initializeServices();
 
-    const body = await request.json();
-    const { message, userContext } = body;
+    const { message, userContext } = req.body;
 
     if (!message) {
-      return Response.json({ error: 'Message is required' }, { status: 400 });
+      return res.status(400).json({ error: 'Message is required' });
     }
 
     // Create LaunchDarkly context from user info
@@ -134,7 +147,7 @@ export async function POST(request) {
       model: aiConfig.model?.name
     });
 
-    return Response.json({
+    res.status(200).json({
       response,
       metadata: {
         model: aiConfig.model?.name || 'gpt-3.5-turbo',
@@ -147,20 +160,9 @@ export async function POST(request) {
   } catch (error) {
     console.error('❌ AI Chat error:', error);
 
-    return Response.json({
+    res.status(500).json({
       error: 'Failed to generate AI response',
       details: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
-    }, { status: 500 });
+    });
   }
-}
-
-export async function OPTIONS(request) {
-  return new Response(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
-  });
 }
