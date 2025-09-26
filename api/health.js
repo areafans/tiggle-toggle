@@ -1,4 +1,4 @@
-const { init } = require('@launchdarkly/node-server-sdk');
+import { init } from '@launchdarkly/node-server-sdk';
 
 let ldClient;
 
