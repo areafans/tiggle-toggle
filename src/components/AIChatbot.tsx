@@ -70,7 +70,12 @@ const AIChatbot: React.FC = () => {
 
   const checkServiceHealth = async () => {
     try {
-      const response = await fetch(`${AI_SERVICE_URL}/health`);
+      const healthUrl = process.env.NODE_ENV === 'development'
+        ? `${AI_SERVICE_URL}/health`
+        : '/api/health';
+
+      console.log('🔍 Checking AI service health at:', healthUrl);
+      const response = await fetch(healthUrl);
       const data = await response.json();
 
       if (data.status === 'healthy') {
@@ -84,7 +89,10 @@ const AIChatbot: React.FC = () => {
     } catch (error) {
       console.error('AI service health check failed:', error);
       setServiceStatus('error');
-      setError('AI service is not available. Please ensure the backend server is running on port 3001.');
+      const errorMessage = process.env.NODE_ENV === 'development'
+        ? 'AI service is not available. Please ensure the backend server is running on port 3001.'
+        : 'AI service is not available. Please check your environment configuration.';
+      setError(errorMessage);
     }
   };
 
@@ -97,7 +105,12 @@ const AIChatbot: React.FC = () => {
       role: user?.role || 'standard-user'
     };
 
-    const response = await fetch(`${AI_SERVICE_URL}/api/ai-chat`, {
+    const chatUrl = process.env.NODE_ENV === 'development'
+      ? `${AI_SERVICE_URL}/api/ai-chat`
+      : '/api/ai-chat';
+
+    console.log('🤖 Sending AI chat request to:', chatUrl);
+    const response = await fetch(chatUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
