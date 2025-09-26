@@ -1,6 +1,6 @@
 import { LDUser } from 'launchdarkly-react-client-sdk';
 
-export const LAUNCHDARKLY_CLIENT_ID = '68ce16f8c7621309bd982219';
+export const LAUNCHDARKLY_CLIENT_ID = process.env.REACT_APP_LD_CLIENT_SIDE_ID || '68ce16f8c7621309bd982219';
 
 export const createLDUser = (userId: string, role: 'lab-owner' | 'beta-user' | 'standard-user', name: string): LDUser => {
   return {

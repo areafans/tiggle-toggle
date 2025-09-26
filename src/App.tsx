@@ -39,10 +39,20 @@ function AppContent() {
 function App() {
   const initialContext = createLDContext('user1', 'lab-owner', 'Alex Chen');
 
-  console.log('🚀 App initializing with LaunchDarkly:', {
+  // Enhanced debugging for deployment issues
+  console.log('🚀 ToggleLab App initializing...', {
+    environment: process.env.NODE_ENV,
     clientSideID: LAUNCHDARKLY_CLIENT_ID,
+    clientIDLength: LAUNCHDARKLY_CLIENT_ID.length,
+    envVar: process.env.REACT_APP_LD_CLIENT_SIDE_ID,
     context: initialContext
   });
+
+  // Validate client ID format
+  if (!LAUNCHDARKLY_CLIENT_ID || LAUNCHDARKLY_CLIENT_ID.length < 20) {
+    console.error('❌ Invalid LaunchDarkly Client ID:', LAUNCHDARKLY_CLIENT_ID);
+    console.error('⚠️ This will cause app initialization to fail!');
+  }
 
   return (
     <LDProvider
