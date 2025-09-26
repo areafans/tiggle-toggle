@@ -1,6 +1,6 @@
-import { init } from '@launchdarkly/node-server-sdk';
-import { initAi } from '@launchdarkly/server-sdk-ai';
-import { OpenAI } from 'openai';
+const { init } = require('@launchdarkly/node-server-sdk');
+const { initAi } = require('@launchdarkly/server-sdk-ai');
+const { OpenAI } = require('openai');
 
 let ldClient;
 let aiClient;
@@ -31,7 +31,7 @@ async function initializeServices() {
   return { ldClient, aiClient };
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');

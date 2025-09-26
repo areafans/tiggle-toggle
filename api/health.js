@@ -1,4 +1,4 @@
-import { init } from '@launchdarkly/node-server-sdk';
+const { init } = require('@launchdarkly/node-server-sdk');
 
 let ldClient;
 
@@ -16,7 +16,7 @@ async function initializeLaunchDarkly() {
   return ldClient;
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
