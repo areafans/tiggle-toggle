@@ -11,8 +11,8 @@
     { "src": "/(.*)", "dest": "/index.html" }
   ],
   "env": {
-    "REACT_APP_LD_CLIENT_SIDE_ID": "@react-app-ld-client-side-id",
-    "LAUNCHDARKLY_SDK_KEY": "@launchdarkly-sdk-key",
-    "OPENAI_API_KEY": "@openai-api-key"
+    "REACT_APP_LD_CLIENT_SIDE_ID": "$REACT_APP_LD_CLIENT_SIDE_ID",
+    "LAUNCHDARKLY_SDK_KEY": "$LAUNCHDARKLY_SDK_KEY",
+    "OPENAI_API_KEY": "$OPENAI_API_KEY"
   }
 }
